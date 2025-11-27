@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <base href="./">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEP - WORD (Không có cột Kết quả)</title>
+    <style>
+        body {font-family:'Times New Roman',serif;background:#f4f6f9;margin:0;padding:0;}
+        .tab {overflow:hidden;background:#333;position:fixed;top:0;left:0;width:100%;z-index:1000;}
+        .tab button {background:#555;float:left;border:none;outline:none;cursor:pointer;padding:14px 24px;color:white;font-size:16px;transition:0.3s;}
+        .tab button:hover {background:#666;}
+        .tab button.active {background:#4CAF50;}
+        .tabcontent {margin-top:60px;padding:20px;display:none;}
+        .tabcontent.active {display:block;}
+
+        label {font-weight:bold;margin-top:12px;display:block;}
+        input,textarea {width:100%;padding:8px;margin:5px 0 10px;font-family:inherit;font-size:12pt;box-sizing:border-box;}
+        .field-group {background:white;padding:15px;border:1px solid #ddd;border-radius:8px;margin-bottom:15px;}
+        .add-btn {background:#2196F3;color:white;padding:10px 16px;border:none;cursor:pointer;border-radius:4px;}
+        .remove-btn {background:#f44336;color:white;padding:6px 10px;border:none;cursor:pointer;border-radius:4px;}
+
+        .preview-wrapper {background:white;margin:20px auto;max-width:210mm;box-shadow:0 0 20px rgba(0,0,0,0.15);}
+        .preview-container {padding:2cm 2.54cm;background:white;min-height:297mm;}
+        .preview-container h1 {font-size:14pt;font-weight:bold;text-align:center;margin-bottom:30px;}
+        .preview-container table {width:100%;border-collapse:collapse;margin:30px 0;border:1px solid black;}
+        .preview-container th,.preview-container td {border:1px solid black;padding:12px;font-size:12pt;line-height:1.6;}
+        .preview-container th {background:#f0f0f0;font-weight:bold;text-align:center;vertical-align:middle;}
+        .preview-container td:first-child {font-weight:bold;text-align:center;vertical-align:middle;}
+        .preview-container td:nth-child(2) {vertical-align:top;}
+        .preview-container td:last-child {text-align:center;vertical-align:middle;}
+
+        .export-box {position:fixed;top:70px;right:20px;background:white;padding:20px;border-radius:8px;box-shadow:0 0 15px rgba(0,0,0,0.3);z-index:999;text-align:center;}
+    </style>
+</head>
+<body>
+
+<div class="tab">
+    <button class="tablinks active" onclick="openTab(event,'Nhap')">Nhập liệu</button>
+    <button class="tablinks" onclick="openTab(event,'Xem')">Xem trước & Tải về</button>
+</div>
+
+<div id="Nhap" class="tabcontent active">
+    <h2>Nhập thông tin đánh giá IEP</h2>
+    <label>Họ và tên học sinh</label>
+    <input type="text" id="hoTen" value="Anh Khoa">
+    <label>Tháng/Năm</label>
+    <input type="text" id="thangNam" value="04/2025">
+    <label>Ngày ký</label>
+    <input type="text" id="ngayKy" value="Phú Nhuận, ngày 30 tháng 4 năm 2025">
+    <label>Người ký</label>
+    <input type="text" id="nguoiKy" value="ThS. Đới Thị Huệ">
+
+    <hr><h3>Các lĩnh vực</h3>
+    <div id="dsLinhVuc"></div>
+    <button class="add-btn" onclick="themLinhVuc()">+ Thêm lĩnh vực mới</button>
+</div>
+
+<div id="Xem" class="tabcontent">
+    <div class="export-box">
+        <strong style="font-size:18px;">TẢI FILE WORD</strong><br><br>
+        <label>Tên file (để trống = tự động):</label><br>
+        <input type="text" id="tenFile" style="width:340px;padding:10px;font-size:14pt;">
+        <br><br>
+        <button onclick="exportToWord()" style="cursor:pointer;padding:14px 32px;background:#d32f2f;color:white;border:none;font-size:18px;border-radius:6px;">
+            TẢI WORD
+        </button>
+    </div>
+
+    <div class="preview-wrapper">
+        <div class="preview-container" id="content"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+// Dữ liệu mẫu (đã bỏ trường ketQua)
+const mauLinhVuc = [
+    {ten:"Vận động",mucTieu:"",gv:"Cô Trâm"},
+    {ten:"Kĩ năng tự chăm sóc bản thân",mucTieu:"",gv:"Cô Tiên"},
+    {ten:"Kĩ năng phụ giúp việc nhà",mucTieu:"",gv:"Cô Hương + Cô Huệ"},
+    {ten:"Kĩ năng giao tiếp",mucTieu:"",gv:"Cô Ngân"},
+    {ten:"Kĩ năng học tập chức năng cao",mucTieu:"",gv:"Cô Lệ"}
+];
+
+function themLinhVuc(d=null){
+    const lv = d || {ten:"",mucTieu:"",gv:""};
+    const div = document.createElement('div');
+    div.className = 'field-group';
+    div.innerHTML = `
+        <label>Tên lĩnh vực</label>
+        <input type="text" class="tenLV" value="${lv.ten}">
+        <label>Mục tiêu</label>
+        <textarea rows="8" class="mucTieu">${lv.mucTieu}</textarea>
+        <label>Giáo viên phụ trách</label>
+        <input type="text" class="gv" value="${lv.gv}">
+        <button class="remove-btn" onclick="this.parentElement.remove()">Xóa lĩnh vực này</button>
+        <hr>
+    `;
+    document.getElementById('dsLinhVuc').appendChild(div);
+}
+
+// Tạo sẵn các lĩnh vực mẫu
+mauLinhVuc.forEach(item => themLinhVuc(item));
+
+function openTab(e, t){
+    document.querySelectorAll('.tabcontent').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tablinks').forEach(x => x.classList.remove('active'));
+    document.getElementById(t).classList.add('active');
+    e.currentTarget.classList.add('active');
+    if(t === 'Xem') xemTruoc();
+}
+
+function xemTruoc(){
+    const hoTen = document.getElementById('hoTen').value.trim() || "Học sinh";
+    const thangNam = document.getElementById('thangNam').value.trim();
+    const ngayKy = document.getElementById('ngayKy').value.trim();
+    const nguoiKy = document.getElementById('nguoiKy').value.trim();
+
+    let rows = "";
+    document.querySelectorAll('.field-group').forEach(g => {
+        const tenLV = g.querySelector('.tenLV').value.trim();
+        const mucTieu = g.querySelector('.mucTieu').value.trim()
+            .split('\n').map(l => l.trim()).filter(l => l)
+            .join('<br>');
+        const gv = g.querySelector('.gv').value.trim();
+
+        rows += `<tr>
+            <td style="font-weight:bold;">${tenLV}</td>
+            <td>${mucTieu || "&nbsp;"}</td>
+            <td><strong>${gv}</strong></td>
+        </tr>`;
+    });
+
+    const title = thangNam ? `ĐÁNH GIÁ KẾ HOẠCH GIÁO DỤC CÁ NHÂN THÁNG ${thangNam}` : 'ĐÁNH GIÁ KẾ HOẠCH GIÁO DỤC CÁ NHÂN';
+
+    const html = `
+        <h1>${title}</h1>
+        <div style="text-align:center;font-weight:bold;margin-bottom:20px;font-size:12pt;">Học sinh: ${hoTen}</div>
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <th width="22%"><strong>LĨNH VỰC</strong></th>
+                <th width="58%"><strong>MỤC TIÊU</strong></th>
+                <th width="20%"><strong>GIÁO VIÊN<br>PHỤ TRÁCH</strong></th>
+            </tr>
+            ${rows}
+        </table>
+        <div style="text-align:right;margin-top:50px;font-style:italic;">${ngayKy}</div>
+        <div style="text-align:right;margin-top:20px;font-weight:bold;">
+            <p>QUẢN LÝ CHUYÊN MÔN</p>
+            <br><br><br>
+            <p>${nguoiKy}</p>
+        </div>`;
+
+    document.getElementById('content').innerHTML = html;
+
+    // Tự động điền tên file nếu để trống
+    const tenDeNghi = `Danh_Gia_IEP_${hoTen.replace(/ /g,'_')}_Thang${thangNam.replace('/','_')}.doc`;
+    if(!document.getElementById('tenFile').value.trim()) {
+        document.getElementById('tenFile').value = tenDeNghi;
+    }
+}
+
+function exportToWord(){
+    xemTruoc();
+    const content = document.getElementById('content').innerHTML;
+    let tenFile = document.getElementById('tenFile').value.trim();
+    if(!tenFile){
+        const hoTen = document.getElementById('hoTen').value.trim().replace(/ /g,'_') || 'HocSinh';
+        const thangNam = document.getElementById('thangNam').value.trim().replace('/','_') || '';
+        tenFile = `Danh_Gia_IEP_${hoTen}_Thang${thangNam}.doc`;
+    }
+
+    const fullHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Đánh giá IEP</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+    @page {size: A4 portrait; margin: 2.5cm 2cm 2cm 2.5cm;}
+    body {font-family:'Times New Roman';font-size:12pt;}
+    table {width:100%;border-collapse:collapse;margin:20px 0;}
+    td,th {border:1px solid black;padding:10px;vertical-align:top;}
+    th {background:#f0f0f0;text-align:center;font-weight:bold;}
+    h1 {text-align:center;font-size:14pt;font-weight:bold;margin:0 0 30px 0;}
+    td:nth-child(1) {font-weight:bold;text-align:center;}
+    td:nth-child(3) {text-align:center;}
+</style>
+</head>
+<body><div>${content}</div></body></html>`;
+
+    const blob = new Blob(['\ufeff', fullHtml], {type: 'application/msword'});
+    saveAs(blob, tenFile + '.doc');
+}
+</script>
+</body>
+</html>
